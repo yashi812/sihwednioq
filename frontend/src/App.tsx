@@ -151,6 +151,7 @@ function App() {
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState('');
   const [reload, setReload] = useState(0);
+  const [activeSection, setActiveSection] = useState<'decision' | 'accuracy'>('decision');
 
   useEffect(() => {
     let active = true;
@@ -167,14 +168,19 @@ function App() {
   const scoredMonth = data?.summary.scoredPoints ?? 0;
   const timeLabel = day?.publishTime ? prettyTime(day.publishTime) : 'No matching publish time';
   const localDecisionDate = day?.decisionDate ? prettyDay(day.decisionDate, true) : 'preceding day';
+  const navigateTo = (id: string, section: 'decision' | 'accuracy') => {
+    setActiveSection(section);
+    const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+    document.getElementById(id)?.scrollIntoView({ behavior, block: 'start' });
+  };
 
   return (
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand-lockup"><div className="brand-mark"><Wind size={22} strokeWidth={2.1} /></div><div className="brand-name">wind<span>desk</span><small>FORECAST INTELLIGENCE</small></div></div>
         <div className="workspace-label">WORKSPACE</div>
-        <button className="nav-item active"><LayoutDashboard size={17} /><span>Decision review</span><i /></button>
-        <button className="nav-item muted" title="Accuracy detail is included below"><BarChart3 size={17} /><span>Forecast accuracy</span></button>
+        <button type="button" className={`nav-item ${activeSection === 'decision' ? 'active' : 'muted'}`} onClick={() => navigateTo('decision-review', 'decision')} aria-current={activeSection === 'decision' ? 'location' : undefined}><LayoutDashboard size={17} /><span>Decision review</span>{activeSection === 'decision' ? <i /> : null}</button>
+        <button type="button" className={`nav-item ${activeSection === 'accuracy' ? 'active' : 'muted'}`} onClick={() => navigateTo('forecast-accuracy', 'accuracy')} aria-current={activeSection === 'accuracy' ? 'location' : undefined} title="View monthly accuracy scores and daily performance"><BarChart3 size={17} /><span>Forecast accuracy</span>{activeSection === 'accuracy' ? <i /> : null}</button>
         <div className="sidebar-divider" />
         <div className="workspace-label">DATA SOURCES</div>
         <div className="source-item"><span className="source-dot teal" /><span>WINDFOR</span><span className="source-state">FORECAST</span></div>
@@ -191,7 +197,7 @@ function App() {
         </header>
 
         <div className="page-content">
-          <section className="page-heading">
+          <section className="page-heading" id="decision-review">
             <div>
               <div className="eyebrow"><span className="eyebrow-line" /> DAY-AHEAD WIND REVIEW <span className="eyebrow-dot">·</span> GB NATIONAL</div>
               <h1>Forecast readiness</h1>
@@ -212,7 +218,7 @@ function App() {
             <div className={`decision-status ${day?.publishTime ? 'ready' : ''}`}><span className="status-dot" />{day?.publishTime ? 'VINTAGE FOUND' : busy ? 'FETCHING' : 'NO VINTAGE'}</div>
           </section>
 
-          <section className="metric-grid" aria-label="January forecast accuracy metrics">
+          <section className="metric-grid" id="forecast-accuracy" aria-label="January forecast accuracy metrics">
             <MetricCard label="MAE" value={data?.summary.mae ?? null} hint="Mean absolute forecast error · month" tone="teal" />
             <MetricCard label="RMSE" value={data?.summary.rmse ?? null} hint="Root mean squared error · month" />
             <article className="metric-card plain"><div className="metric-head"><span>MEAN BIAS</span><span className="metric-unit">MW</span></div><div className="metric-value">{mw1(data?.summary.bias)}</div><div className="metric-hint"><TinyTrend bias={data?.summary.bias ?? null} /></div></article>
@@ -250,9 +256,17 @@ function App() {
           <section className="panel table-panel">
             <div className="panel-heading table-heading"><div><div className="panel-kicker">VINTAGE REGISTER</div><h2>Daily decision record</h2></div><button className="export-button" onClick={() => data && downloadCsv(data)} disabled={!data}><Download size={15} /> Export CSV</button></div>
             <div className="table-scroll"><table><thead><tr><th>Delivery day</th><th>Forecast vintage</th><th>Hours matched</th><th>MAE · MW</th><th>RMSE · MW</th><th>Bias · MW</th><th>Status</th></tr></thead><tbody>
-              {(data?.days ?? []).map((item) => <tr key={item.date} className={item.date === selectedDate ? 'selected' : ''} onClick={() => setSelectedDate(item.date)} tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter') setSelectedDate(item.date); }}>
-                <td><span className="table-date">{prettyDay(item.date, true)}</span></td><td className="mono">{item.publishTime ? prettyTime(item.publishTime) : '—'}</td><td className="mono">{item.scoredPoints} / {item.forecastPoints}</td><td className="mono">{mw1(item.mae)}</td><td className="mono">{mw1(item.rmse)}</td><td className={`mono ${item.bias === null ? '' : item.bias > 0 ? 'bias-positive' : 'bias-negative'}`}>{mw1(item.bias)}</td><td><span className={`table-status ${item.forecastError ? 'issue' : item.publishTime ? 'complete' : 'empty'}`}><i />{item.forecastError ? 'API issue' : item.publishTime ? 'Vintage found' : 'No vintage'}</span></td>
-              </tr>)}
+              {(data?.days ?? []).map((item) => (
+                <tr key={item.date} className={item.date === selectedDate ? 'selected' : ''} onClick={() => setSelectedDate(item.date)}>
+                  <td><button type="button" className="table-row-select" aria-pressed={item.date === selectedDate} aria-label={`Select ${prettyDay(item.date, true)} delivery day`}><span className="table-date">{prettyDay(item.date, true)}</span></button></td>
+                  <td className="mono">{item.publishTime ? prettyTime(item.publishTime) : '—'}</td>
+                  <td className="mono">{item.scoredPoints} / {item.forecastPoints}</td>
+                  <td className="mono">{mw1(item.mae)}</td>
+                  <td className="mono">{mw1(item.rmse)}</td>
+                  <td className={`mono ${item.bias === null ? '' : item.bias > 0 ? 'bias-positive' : 'bias-negative'}`}>{mw1(item.bias)}</td>
+                  <td><span className={`table-status ${item.forecastError ? 'issue' : item.publishTime ? 'complete' : 'empty'}`}><i />{item.forecastError ? 'API issue' : item.publishTime ? 'Vintage found' : 'No vintage'}</span></td>
+                </tr>
+              ))}
               {!data && busy ? <tr><td colSpan={7} className="table-loading"><LoaderCircle size={16} className="spin" /> Loading daily register from Elexon…</td></tr> : null}
             </tbody></table></div>
             <div className="table-footnote"><Info size={13} /> Bias is forecast minus actual. Positive means over-forecast; negative means under-forecast. Only complete hourly pairs are scored.</div>
