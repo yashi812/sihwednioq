@@ -311,7 +311,7 @@ def scene_09() -> Image.Image:
 
 def scene_10() -> Image.Image:
     im = canvas(); d = ImageDraw.Draw(im); header(d, "10", "Build and handoff")
-    heading(im, "02 / RUN AND RELEASE", "One container. A simple local start.", "Vite builds the dashboard; FastAPI serves the API and compiled static files in production.")
+    heading(im, "02 / RUN AND RELEASE", "Vercel-first. Portable in Docker.", "Vercel serves the React build and FastAPI API; Compose preserves a one-container local run.")
     d.rounded_rectangle((70, 269, 763, 625), radius=9, fill="#142d38", outline="#ffffff29")
     d.text((95, 291), "LOCAL DEVELOPMENT", font=font(10, mono=True), fill=TEAL)
     commands = [
@@ -326,15 +326,16 @@ def scene_10() -> Image.Image:
         d.text((110, yy + 6), line, font=font(12, mono=True), fill=WHITE)
         yy += 61
     d.rounded_rectangle((802, 269, 1198, 625), radius=9, fill="#1a3742", outline="#ffffff29")
-    d.text((829, 293), "DEPLOYMENT SHAPE", font=font(9, mono=True), fill=TEAL)
-    d.text((829, 338), "Heroku container", font=font(21, "bold"), fill=WHITE)
-    d.text((829, 372), "web process", font=font(21, "bold"), fill=WHITE)
+    d.text((829, 293), "VERCEL PRODUCTION", font=font(9, mono=True), fill=TEAL)
+    d.text((829, 338), "FastAPI + React", font=font(21, "bold"), fill=WHITE)
+    d.text((829, 372), "Python function", font=font(21, "bold"), fill=WHITE)
+    d.text((829, 405), "sihwednioq.vercel.app", font=font(12, mono=True), fill=LIME)
     d.line((829, 424, 1169, 424), fill="#ffffff30")
-    d.text((829, 450), "PORT-aware listener", font=font(12), fill=MUTED)
-    d.text((829, 480), "Unauthenticated /health", font=font(12), fill=MUTED)
-    d.text((829, 510), "No database required", font=font(12), fill=MUTED)
+    d.text((829, 450), "Pinned Python dependencies", font=font(12), fill=MUTED)
+    d.text((829, 480), "GET /api/health", font=font(12), fill=MUTED)
+    d.text((829, 510), "Docker remains portable", font=font(12), fill=MUTED)
     d.rounded_rectangle((829, 557, 1170, 594), radius=5, fill="#214b50")
-    d.text((850, 567), "TRACEABLE  ·  READ-ONLY  ·  REVIEWABLE", font=font(8, mono=True), fill=LIME)
+    d.text((850, 567), "TRACEABLE  ·  READ-ONLY  ·  REPRODUCIBLE", font=font(8, mono=True), fill=LIME)
     return im
 
 
@@ -390,14 +391,21 @@ def concat_clips(clips: list[Path], output: Path) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--screenshot", type=Path, default=ROOT / "docs/demo/dashboard-jan15.png")
-    parser.add_argument("--audio", type=Path, default=Path("/home/ubuntu/winddesk-deliverables/audio"))
-    parser.add_argument("--output", type=Path, default=Path("/home/ubuntu/winddesk-deliverables"))
+    parser.add_argument("--audio", type=Path, default=ROOT / "assets/narration", help="Directory of scene-01.wav through scene-10.wav; generated speech assets are not stored in Git.")
+    parser.add_argument("--output", type=Path, default=ROOT / "deliverables", help="Output directory for rendered scenes and chapter videos.")
     parser.add_argument("--frames-only", action="store_true")
     args = parser.parse_args()
     frames = args.output / "scenes"
     build_scenes(args.screenshot, frames)
     if args.frames_only:
         return
+    missing_audio = [
+        args.audio / f"scene-{idx:02d}.wav"
+        for idx in range(1, 11)
+        if not (args.audio / f"scene-{idx:02d}.wav").is_file()
+    ]
+    if missing_audio:
+        parser.error(f"missing narration WAVs under {args.audio}; supply the folder with --audio")
     clips: list[Path] = []
     for idx in range(1, 11):
         clip = args.output / f"scene-{idx:02d}.mp4"

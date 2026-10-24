@@ -40,6 +40,10 @@ The analysis module creates an hourly actual only when both half-hour values exi
 
 The frontend folder contains the responsive React dashboard, an SVG profile chart and the CSV export. Backend app main exposes health, monthly dashboard and single-day routes. Backend app analysis owns the calculations. Tests cover half-hour averaging, incomplete-pair handling, error sign and coverage. Four backend tests pass, and the TypeScript production build completes. The README maps the directories, gives the local commands and documents the field and score conventions so the next engineer can reproduce the analysis.
 
-### Scene 10 — Container and handoff
+### Scene 10 — Vercel and handoff
 
-The Dockerfile uses a Node build stage for the Vite assets and a Python runtime stage for FastAPI. The same container serves the compiled dashboard and API, honors the platform’s PORT value and exposes an unauthenticated health route. Docker Compose is the local production-shaped run. The intended release path is a Heroku container web process. The pilot remains intentionally narrow: no account system, persisted customer data, load forecasting or automated bidding. The result is small enough to review, rerun and extend without hiding its assumptions.
+The Vercel release runs FastAPI as a Python function and serves the compiled React dashboard with it. The root PEP 621 project manifest pins FastAPI and Requests; the declared entrypoint and health route make the service easy to inspect. The Dockerfile and Compose setup remain a portable one-container option. The pilot stays narrow: no accounts, persisted customer data, load forecasting or automated bidding. The result is small enough to review, rerun and extend without hiding its assumptions.
+
+## Delivery details
+
+The client chapter is 165.534 seconds (2:45.5); the technical chapter is 180.314 seconds (3:00.3); the combined cut is 345.849 seconds (5:45.8). Each chapter is under five minutes and the combined cut is under ten minutes. English subtitles are provided as sidecar SRT files and embedded as a selectable `mov_text` MP4 subtitle track. The client chapter is customer-facing; the technical chapter covers architecture, design, analysis, codebase and development practices.
